@@ -1,0 +1,25 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.coal.projects.chat">
+
+    <application>
+
+        <activity android:name=".presentation.chats.ChatsActivity"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        </activity>
+
+        <activity android:name=".presentation.chats.chat.ChatActivity">
+
+        </activity>
+
+        <activity android:name=".presentation.LoginActivity">
+
+        </activity>
+
+        <activity android:name=".presentation.contacts.ContactsActivity">
+
+        </activity>
+
+    </application>
+
+</manifest>
