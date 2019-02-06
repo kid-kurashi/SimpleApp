@@ -1,28 +1,28 @@
 package com.coal.projects.chat.data.pojo;
 
-import java.util.Date;
-
 public class Message {
 
     private String messageText;
     private String messageOwner;
-    private long messageTime;
-
-    public Message(String messageText, String messageOwner) {
-        this.messageText = messageText;
-        this.messageOwner = messageOwner;
-
-        // Initialize to current time
-        messageTime = new Date().getTime();
-    }
+    private String messageTime;
+    private boolean isRead;
 
     public Message() {
     }
 
-    public Message(String messageText, String messageOwner, long messageTime) {
+    public Message(String messageText, String messageOwner, String messageTime, boolean isRead) {
         this.messageText = messageText;
         this.messageOwner = messageOwner;
         this.messageTime = messageTime;
+        this.isRead = isRead;
+    }
+
+    public boolean isRead() {
+        return isRead;
+    }
+
+    public void setRead(boolean read) {
+        isRead = read;
     }
 
     public String getMessageText() {
@@ -41,11 +41,11 @@ public class Message {
         this.messageOwner = messageOwner;
     }
 
-    public long getMessageTime() {
+    public String getMessageTime() {
         return messageTime;
     }
 
-    public void setMessageTime(long messageTime) {
+    public void setMessageTime(String messageTime) {
         this.messageTime = messageTime;
     }
 }

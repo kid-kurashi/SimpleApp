@@ -26,6 +26,14 @@
                 android:padding="8dp">
 
             <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/chat_display_name"
+                    tools:text="Some name"
+                    chatApp:layout_constraintStart_toStartOf="parent"
+                    chatApp:layout_constraintTop_toTopOf="parent"/>
+
+            <TextView
                     android:id="@+id/chat_message_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -33,7 +41,8 @@
                     chatApp:layout_constraintStart_toStartOf="parent"
                     chatApp:layout_constraintTop_toTopOf="parent"
                     tools:text="fdhgfdghfdghfg hdfghdfgh dfgh fdg hfdg hfdg hfdg hdf ghfd ghfg hdf ghfdg fdg dfg hdfgh fdg fdg hdfg hdfg hfd"
-                    chatApp:layout_constraintEnd_toEndOf="parent"/>
+                    chatApp:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="24dp"/>
 
             <TextView
                     android:id="@+id/chat_message_time"

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:app="http://schemas.android.com/apk/res-auto"
+             xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+             android:layout_height="wrap_content">
+
+    <com.makeramen.roundedimageview.RoundedImageView
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            app:riv_corner_radius="36dp"
+            app:riv_border_width="3dp"
+            app:riv_border_color="@color/md_white_1000"
+            android:layout_margin="16dp"
+    />
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+              android:layout_gravity="center"
+              tools:text="Some Name"
+              style="@style/TextAppearance.AppCompat.Widget.PopupMenu.Header"/>
+
+    <ImageView android:layout_width="32dp" android:layout_height="32dp"
+               app:srcCompat="@drawable/settings"
+               android:layout_gravity="top|end"
+               android:layout_margin="16dp"
+               style="@style/Base.Widget.AppCompat.Button.Borderless"
+               android:theme="@style/Base.Widget.AppCompat.Button.Borderless"
+               android:scaleType="center"/>
+</FrameLayout>

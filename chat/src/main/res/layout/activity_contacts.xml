@@ -52,7 +52,17 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
                 android:layout_margin="@dimen/fab_margin"
-                chatApp:srcCompat="@drawable/add" />
+                chatApp:srcCompat="@drawable/add"
+                android:visibility="@{model.selectionMode ? View.GONE : View.VISIBLE}"/>
+
+            <android.support.design.widget.FloatingActionButton
+                    android:id="@+id/fab_write"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="@dimen/fab_margin"
+                    chatApp:srcCompat="@drawable/write"
+            android:visibility="@{model.selectionMode ? View.VISIBLE : View.GONE}"/>
 
         </FrameLayout>
     </android.support.constraint.ConstraintLayout>

@@ -9,4 +9,5 @@ public abstract class Users {
     public static final String FIELD_UID = "uId";
     public static final String FIELD_DEVICE_TOKEN = "deviceToken";
     public static final String FIELD_CONTACTS = "contacts";
+    public static final String FIELD_PHOTO_URL = "imageUrl";
 }

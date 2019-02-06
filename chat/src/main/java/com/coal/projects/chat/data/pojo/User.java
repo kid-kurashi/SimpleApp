@@ -5,18 +5,21 @@ import java.util.List;
 
 public class User {
 
-    private String displayName;
-    private String uId;
-    private String deviceToken;
-    private List<String> contacts;
-    private String login;
+    protected String displayName;
+    protected String deviceToken;
+    protected List<String> contacts;
+    protected String login;
+    protected String imageUrl;
 
-    public User(String displayName, String uId, String deviceToken, String login) {
+    public User(String displayName,
+                String deviceToken,
+                String login,
+                String imageUrl) {
         this.displayName = displayName;
-        this.uId = uId;
         this.deviceToken = deviceToken;
         this.login = login;
         this.contacts = new ArrayList<>();
+        this.imageUrl = imageUrl;
     }
 
     public String getDisplayName() {
@@ -25,14 +28,6 @@ public class User {
 
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
-    }
-
-    public String getuId() {
-        return uId;
-    }
-
-    public void setuId(String uId) {
-        this.uId = uId;
     }
 
     public String getDeviceToken() {
@@ -59,11 +54,11 @@ public class User {
         this.login = login;
     }
 
-    public User update(User user) {
-        this.displayName = user.getDisplayName();
-        this.uId = user.getuId();
-        this.deviceToken = user.getDeviceToken();
-        this.contacts = user.getContacts();
-        return this;
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

@@ -1,26 +1,64 @@
 package com.coal.projects.simpleapp
 
 import android.app.Application
-import com.coal.projects.chat.ChatInstance
-import com.coal.projects.chat.ChatNotificationHelper
+import android.net.Uri
+import android.widget.ImageView
+import com.coal.projects.chat.creation.ChatInstance
+import com.coal.projects.chat.NotificationHelper
+import com.coal.projects.chat.ImageLoader
+import com.coal.projects.chat.creation.ChatIcons
 import com.coal.projects.chat.data.FirebaseRepository
 import com.coal.projects.chat.data.SharedPreferecesManager
 import com.google.firebase.FirebaseApp
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.squareup.picasso.Picasso
+import com.squareup.picasso.Target
 
 class App : Application() {
+
+    private lateinit var chatInstance: ChatInstance
 
     override fun onCreate() {
         super.onCreate()
 
         FirebaseApp.initializeApp(this)
 
-        ChatInstance.firebaseRepository = FirebaseRepository(
-            FirebaseAuth.getInstance(),
-            FirebaseFirestore.getInstance()
+        chatInstance = ChatInstance(
+            FirebaseRepository(FirebaseFirestore.getInstance()),
+            SharedPreferecesManager(this),
+            NotificationHelper(this),
+            getImageLoader(),
+            "AAAA3SIXepg:APA91bHpG5_Z9DgGNrp0N7ojI26LCg67S9TCU2-dpALepj5dfksG6hMg2uIVGkDtOdLKsWIi_MsNGQU30YO1ft5d7BN3pJT29bQvlqkTfV15aCSdpbgsLCc8qwOSRIcyz87TDgWldAt9"
         )
-        ChatInstance.sharedPreferecesManager = SharedPreferecesManager(this)
-        ChatInstance.chatNotificationHelper = ChatNotificationHelper(this)
+        ChatIcons.drawableIcNotification = R.drawable.logo
+        ChatIcons.mipmapIcNotification = R.mipmap.ic_launcher
+    }
+
+    private fun getImageLoader(): ImageLoader? {
+        return object : ImageLoader {
+            override fun loadImageInto(url: String?, target: Target?) {
+                picasso.load(url).into(target)
+            }
+
+            override fun loadImageInto(url: String?, imageView: ImageView?) {
+                picasso.load(url).into(imageView)
+            }
+
+            override fun invalidateCache(url: String?) {
+
+            }
+
+            override fun loadImageInto(uri: Uri?, imageView: ImageView?) {
+                picasso.load(uri).into(imageView)
+            }
+
+            override fun loadImageInto(uri: Uri?, target: Target?) {
+                picasso.load(uri).into(target)
+            }
+
+            override fun getPicasso(): Picasso {
+                return Picasso.with(this@App)
+            }
+        }
     }
 }

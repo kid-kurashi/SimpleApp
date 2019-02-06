@@ -1,11 +1,13 @@
 package com.coal.projects.chat.presentation.contacts;
 
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.databinding.DataBindingUtil;
 import android.os.Bundle;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.util.DiffUtil;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -13,10 +15,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import com.coal.projects.chat.ChatInstance;
+import android.widget.Toast;
+import com.coal.projects.chat.creation.ChatInstance;
 import com.coal.projects.chat.R;
 import com.coal.projects.chat.data.FirebaseRepository;
 import com.coal.projects.chat.databinding.ActivityContactsBinding;
+import com.coal.projects.chat.domain.utils.ContactsDiffUtilCallback;
 import com.coal.projects.chat.presentation.base.BaseActivity;
 import com.coal.projects.chat.presentation.base.ModelFactory;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -24,8 +28,11 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import static com.coal.projects.chat.NotificationHelper.CHAT_INNER_ACTION;
 
 public class ContactsActivity extends BaseActivity {
 
@@ -46,16 +53,24 @@ public class ContactsActivity extends BaseActivity {
     private Disposable behaviorDisposable;
     private BehaviorSubject<String> inputBehavior = BehaviorSubject.create();
 
+    private ChatInstance chatInstance;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        firebaseRepository = ChatInstance.firebaseRepository;
+        notifyScreen();
+        setTitle("Contacts");
+        chatInstance = ChatInstance.getInstance();
+
+        firebaseRepository = chatInstance.getFirebaseRepository();
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_contacts);
         viewModel = ViewModelProviders.of(this, new ModelFactory()).get(ContactsViewModel.class);
+        viewModel.setSavedInstanceState(savedInstanceState);
         getLifecycle().addObserver(viewModel);
+        viewModel.setSelectionMode(getIntent().getStringExtra("SELECTION_MODE") != null);
 
         dialogView = getLayoutInflater().inflate(R.layout.add_contact_layout, null);
         layout = dialogView.findViewById(R.id.add_contact_layout);
@@ -94,6 +109,14 @@ public class ContactsActivity extends BaseActivity {
                 .create();
 
         binding.fabAddContact.setOnClickListener(v -> showDialog());
+        binding.fabWrite.setOnClickListener(view -> {
+            if (viewModel.makeResult(getIntent())) {
+                setResult(RESULT_OK, getIntent());
+                finish();
+            } else {
+                Toast.makeText(this, "No one contact selected !", Toast.LENGTH_LONG).show();
+            }
+        });
 
         viewModel.isProgress.observe(this, progress -> binding.setModel(viewModel));
         viewModel.dismissDialog.observe(this, dismiss -> {
@@ -103,13 +126,40 @@ public class ContactsActivity extends BaseActivity {
         binding.contactsRecyclerView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         binding.contactsRecyclerView.setLayoutManager(layoutManager);
-        adapter = new ContactsAdapter();
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(binding.contactsRecyclerView.getContext(),
+                layoutManager.getOrientation());
+        binding.contactsRecyclerView.addItemDecoration(dividerItemDecoration);
+
+        adapter = new ContactsAdapter(chatInstance.getImageLoader(), viewModel.isSelectionMode(), this::toggleButton);
         binding.contactsRecyclerView.setAdapter(adapter);
 
         viewModel.listContacts.observe(this, this::updateContacts);
+        viewModel.selection.observe(this, selection -> {
+            binding.fabWrite.setEnabled(selection);
+            binding.notifyChange();
+        });
     }
 
-    private void updateContacts(List<String> contacts) {
+    private void notifyScreen() {
+        Intent intent = getIntent();
+        intent.setAction(CHAT_INNER_ACTION);
+        sendBroadcast(intent);
+    }
+
+    private void toggleButton(List<SelectableUser> items) {
+        boolean haveSelection = false;
+        ArrayList<SelectableUser> selectableUsers = new ArrayList<>();
+        for (SelectableUser user : items) {
+            if (user.isSelected()) {
+                haveSelection = true;
+                selectableUsers.add(user);
+            }
+        }
+        viewModel.setSelectedUsers(selectableUsers);
+        viewModel.toggleButton(haveSelection);
+    }
+
+    private void updateContacts(List<SelectableUser> contacts) {
 
         viewModel.writeContacts(contacts);
 

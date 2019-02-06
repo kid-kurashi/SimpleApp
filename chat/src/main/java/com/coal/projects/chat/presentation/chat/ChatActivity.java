@@ -1,4 +1,4 @@
-package com.coal.projects.chat.presentation.chats.chat;
+package com.coal.projects.chat.presentation.chat;
 
 
 import android.arch.lifecycle.ViewModelProviders;
@@ -12,9 +12,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.LinearLayoutManager;
+import android.util.Log;
 import android.view.MenuItem;
 import com.coal.projects.chat.R;
 import com.coal.projects.chat.databinding.ActivityChatBinding;
+import com.coal.projects.chat.domain.utils.MessagesDiffUtilCallback;
 import com.coal.projects.chat.firestore_constants.Chats;
 import com.coal.projects.chat.presentation.base.BaseActivity;
 import com.coal.projects.chat.presentation.base.ModelFactory;
@@ -22,11 +24,9 @@ import com.coal.projects.chat.presentation.base.ModelFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnRefreshListener {
+import static com.coal.projects.chat.NotificationHelper.CHAT_INNER_ACTION;
 
-    private BroadcastReceiver bReceiver;
-    public static final String RECEIVE_MESSAGE = "com.example.firebasechat.RECEIVE_MESSAGE";
-    private LocalBroadcastManager bManager;
+public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     private ActivityChatBinding binding;
     private ChatViewModel viewModel;
@@ -34,13 +34,17 @@ public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnR
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
+        notifyScreen();
+        setTitle(getToolbarTitle());
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         binding = DataBindingUtil.setContentView(this, R.layout.activity_chat);
         viewModel = ViewModelProviders.of(this, new ModelFactory()).get(ChatViewModel.class);
+        viewModel.setSavedInstanceState(savedInstanceState);
         getLifecycle().addObserver(viewModel);
-        viewModel.setChatId(getIntent().getStringExtra(Chats.FIELD_CHAT_ID));
+        viewModel.setChatId(getIntent());
 
 
         binding.chatRecycler.setHasFixedSize(true);
@@ -49,30 +53,9 @@ public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnR
         chatAdapter = new ChatAdapter(viewModel.getOwner());
         binding.chatRecycler.setAdapter(chatAdapter);
 
-        binding.chatRefresh.setOnRefreshListener(this);
-        binding.chatRefresh.setColorSchemeResources(R.color.colorPrimary,
-                android.R.color.holo_green_light,
-                android.R.color.holo_orange_light,
-                android.R.color.holo_red_light);
+        setupSwipeRefresh();
 
         viewModel.isProgress.observe(this, this::toggleProgress);
-
-
-        bReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if ((intent != null)
-                        && (intent.getAction() != null)
-                        && intent.getAction().equals(RECEIVE_MESSAGE)) {
-                    onReceivedNewIntent(intent);
-                }
-            }
-        };
-
-        bManager = LocalBroadcastManager.getInstance(this);
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(RECEIVE_MESSAGE);
-        bManager.registerReceiver(bReceiver, intentFilter);
 
         binding.sendButton.setOnClickListener(v -> {
             viewModel.sendMessage(binding.inputMessage.getText().toString());
@@ -81,6 +64,31 @@ public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnR
 
         viewModel.messages.observe(this, this::updateMessages);
 
+    }
+
+    @Override
+    protected void onPostResume() {
+        super.onPostResume();
+        Log.e("TITLE", getToolbarTitle());
+        setTitle(getToolbarTitle());
+    }
+
+    private void notifyScreen() {
+        Intent intent = getIntent();
+        intent.setAction(CHAT_INNER_ACTION);
+        sendBroadcast(intent);
+    }
+
+    private String getToolbarTitle() {
+        return getIntent().getStringExtra(Chats.FIELD_DISPLAY_NAMES);
+    }
+
+    private void setupSwipeRefresh() {
+        binding.chatRefresh.setOnRefreshListener(this);
+        binding.chatRefresh.setColorSchemeResources(R.color.colorPrimary,
+                android.R.color.holo_green_light,
+                android.R.color.holo_orange_light,
+                android.R.color.holo_red_light);
     }
 
     private void toggleProgress(Boolean isProgress) {
@@ -101,10 +109,6 @@ public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnR
         });
     }
 
-    private void onReceivedNewIntent(Intent intent) {
-
-    }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -118,4 +122,6 @@ public class ChatActivity extends BaseActivity implements SwipeRefreshLayout.OnR
     public void onRefresh() {
         viewModel.loadMessages();
     }
+
+
 }

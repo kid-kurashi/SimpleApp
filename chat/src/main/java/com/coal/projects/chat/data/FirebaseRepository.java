@@ -1,124 +1,133 @@
 package com.coal.projects.chat.data;
 
 
+import android.util.Log;
 import com.coal.projects.chat.data.pojo.Chat;
 import com.coal.projects.chat.data.pojo.User;
+import com.coal.projects.chat.domain.mappers.LoginsToDisplayNamesMapper;
 import com.coal.projects.chat.firestore_constants.Chats;
 import com.coal.projects.chat.firestore_constants.Users;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.coal.projects.chat.presentation.chats.CreatedChat;
+import com.coal.projects.chat.presentation.contacts.SelectableUser;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.iid.FirebaseInstanceId;
 import io.reactivex.Observable;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
 
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public class FirebaseRepository {
 
-    private FirebaseAuth firebaseAuth;
-    private FirebaseUser firebaseUser;
+    private static final String MESSAGE_NULL_USER = "ChatUser must be init first !";
+
     private FirebaseFirestore database;
     private String deviceToken;
+    private ChatUser chatUser;
 
-    private ReplaySubject<DocumentSnapshot> currentUserObservableDocument = ReplaySubject.create();
     private ReplaySubject<List<Map<String, Object>>> userChatsObservable = ReplaySubject.create();
-    private ReplaySubject<String> createNewChatObservable = ReplaySubject.create();
+    private ReplaySubject<CreatedChat> createNewChatObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> connectToFirestoreObservable = ReplaySubject.create();
-    private ReplaySubject<List<String>> contactsObservable = ReplaySubject.create();
+    private ReplaySubject<List<SelectableUser>> contactsObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> addContactObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> findUserByEmailObservable = ReplaySubject.create();
-    private ReplaySubject<ArrayList<HashMap<String, String>>> chatMessagesObservable = ReplaySubject.create();
+    private PublishSubject<ArrayList<HashMap<String, String>>> chatMessagesObservable = PublishSubject.create();
 
-    public FirebaseRepository(FirebaseAuth firebaseAuth, FirebaseFirestore database) {
-        this.firebaseAuth = firebaseAuth;
-        this.firebaseUser = firebaseAuth.getCurrentUser();
+    public FirebaseRepository(FirebaseFirestore database) {
         this.database = database;
     }
 
+    public void initChatUser(ChatUser chatUser) {
+        this.chatUser = chatUser;
+    }
+
     private DocumentReference getCurrentUserReference() {
+        if (chatUser == null)
+            throw new NullPointerException(MESSAGE_NULL_USER);
         return database.collection(Users.COLLECTION_PATH)
-                .document(firebaseUser.getUid());
+                .document(chatUser.getLogin());
     }
 
-    public Observable<DocumentSnapshot> getUser() {
-        database.collection(Users.COLLECTION_PATH)
-                .document(firebaseUser.getUid())
+    private DocumentReference getuserByLogin(String login) {
+        return database.collection(Users.COLLECTION_PATH)
+                .document(login);
+    }
+
+    public Observable<List<Map<String, Object>>> observeUserChats() {
+
+        PublishSubject<Map<String, Object>> snapshotPublishSubject = PublishSubject.create();
+
+        database.collection(Chats.COLLECTION_PATH)
+                .whereArrayContains(Chats.FIELD_MEMBERS, chatUser.getLogin())
                 .get()
-                .addOnSuccessListener(documentSnapshot ->
-                        currentUserObservableDocument.onNext(documentSnapshot))
-                .addOnFailureListener(e -> currentUserObservableDocument.onError(e));
-        return currentUserObservableDocument;
-    }
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot != null && !querySnapshot.getDocuments().isEmpty()) {
+                        List<DocumentSnapshot> listSnapshots = querySnapshot.getDocuments();
+                        CompositeDisposable disposable = new CompositeDisposable();
+                        for (DocumentSnapshot item : listSnapshots) {
+                            database.collection(Chats.COLLECTION_PATH)
+                                    .document(item.getId())
+                                    .addSnapshotListener((snapshot1, e) -> {
+                                        if (e != null || snapshot1 == null)
+                                            snapshotPublishSubject.onError(e);
 
-    public Observable<List<Map<String, Object>>> getUserChats() {
-        firebaseUser = firebaseAuth.getCurrentUser();
-        if (firebaseUser != null && firebaseUser.getEmail() != null) {
-            String email = firebaseUser.getEmail();
-            database.collection(Chats.COLLECTION_PATH)
-                    .whereArrayContains(Chats.FIELD_MEMBERS, email)
-                    .get()
-                    .addOnSuccessListener(snapshot -> {
-                        if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
-                            ArrayList<Map<String, Object>> list = new ArrayList<>();
-                            for (DocumentSnapshot item : snapshot.getDocuments()) {
-                                HashMap<String, Object> map = new HashMap<>();
-                                map.put(Chats.FIELD_MEMBERS, item.get(Chats.FIELD_MEMBERS));
-                                map.put(Chats.FIELD_MESSAGES, item.get(Chats.FIELD_MESSAGES));
-                                map.put(Chats.FIELD_CHAT_ID, item.get(Chats.FIELD_CHAT_ID));
-                                list.add(map);
-                            }
-                            userChatsObservable.onNext(list);
-                        } else
-                            userChatsObservable.onNext(new ArrayList<>());
-                    })
-                    .addOnFailureListener(e -> userChatsObservable.onError(e));
-        } else {
-            userChatsObservable.onError(new Throwable("firebaseUser.getEmail() == null"));
-        }
+                                        HashMap<String, Object> map = new HashMap<>();
+                                        disposable.add(new LoginsToDisplayNamesMapper(database)
+                                                .map((List<String>) snapshot1.get(Chats.FIELD_MEMBERS), chatUser.getDisplayName())
+                                                .subscribe(names -> {
+                                                    map.put(Chats.FIELD_DISPLAY_NAMES, names);
+                                                    map.put(Chats.FIELD_MEMBERS, snapshot1.get(Chats.FIELD_MEMBERS));
+                                                    map.put(Chats.FIELD_MESSAGES, snapshot1.get(Chats.FIELD_MESSAGES));
+                                                    map.put(Chats.FIELD_CHAT_ID, snapshot1.get(Chats.FIELD_CHAT_ID));
+                                                    snapshotPublishSubject.onNext(map);
+                                                }, excp -> {
+                                                    excp.printStackTrace();
+                                                    snapshotPublishSubject.onNext(new HashMap<>());
+                                                }));
+                                    });
+                        }
+                        snapshotPublishSubject
+                                .buffer(listSnapshots.size())
+                                .map(list -> {
+                                    disposable.dispose();
+                                    return list;
+                                })
+                                .subscribe(userChatsObservable::onNext, contactsObservable::onError);
+                    } else
+                        userChatsObservable.onNext(new ArrayList<>());
+                })
+                .addOnFailureListener(e -> userChatsObservable.onError(e));
         return userChatsObservable;
     }
 
-    public Observable<List<Map<String, Object>>> observeUserChats(){
-        firebaseUser = firebaseAuth.getCurrentUser();
-        if (firebaseUser != null && firebaseUser.getEmail() != null) {
-            String email = firebaseUser.getEmail();
-            database.collection(Chats.COLLECTION_PATH)
-                    .whereArrayContains(Chats.FIELD_MEMBERS, email)
-                    .get()
-                    .addOnSuccessListener(snapshot -> {
-                        if (snapshot != null && !snapshot.getDocuments().isEmpty()) {
-                            ArrayList<Map<String, Object>> list = new ArrayList<>();
-                            for (DocumentSnapshot item : snapshot.getDocuments()) {
+    public Observable<String> getProfileUrl(String login) {
 
-                                HashMap<String, Object> map = new HashMap<>();
-                                map.put(Chats.FIELD_MEMBERS, item.get(Chats.FIELD_MEMBERS));
-                                map.put(Chats.FIELD_MESSAGES, item.get(Chats.FIELD_MESSAGES));
-                                map.put(Chats.FIELD_CHAT_ID, item.get(Chats.FIELD_CHAT_ID));
-                                list.add(map);
-                            }
-                            userChatsObservable.onNext(list);
-                        } else
-                            userChatsObservable.onNext(new ArrayList<>());
-                    })
-                    .addOnFailureListener(e -> userChatsObservable.onError(e));
-        } else {
-            userChatsObservable.onError(new Throwable("firebaseUser.getEmail() == null"));
-        }
-        return userChatsObservable;
+        BehaviorSubject<String> userImage = BehaviorSubject.create();
+        database.collection(Users.COLLECTION_PATH)
+                .document(login)
+                .get()
+                .addOnSuccessListener(snapshot -> userImage.onNext((String) snapshot.get(Users.FIELD_PHOTO_URL)))
+                .addOnFailureListener(userImage::onError);
+
+        return userImage;
     }
 
-    public Observable<String> createNewChat(Map<String, String> chatMembers) {
+    public Observable<CreatedChat> createNewChat(List<String> chatMembers) {
+        chatMembers.add(chatUser.getLogin());
         DocumentReference chatDocument = database.collection(Chats.COLLECTION_PATH).document();
         String chatId = chatDocument.getId();
         chatDocument
                 .set(new Chat(chatMembers, new ArrayList<>(), chatId))
-                .addOnCompleteListener(task -> createNewChatObservable.onNext(chatId))
+                .addOnCompleteListener(task -> getuserByLogin(chatMembers.get(0)).get().addOnSuccessListener(snapshot -> {
+                    createNewChatObservable.onNext(new CreatedChat((String) snapshot.get(Users.FIELD_DISPLAY_NAME), chatId));
+                }))
                 .addOnFailureListener(e -> createNewChatObservable.onError(e));
         return createNewChatObservable;
     }
@@ -137,6 +146,9 @@ public class FirebaseRepository {
     }
 
     private void updateDeviceTokenOrCreateNewUser(DocumentSnapshot snapshot, Throwable e) {
+        if (chatUser == null) {
+            throw new NullPointerException(MESSAGE_NULL_USER);
+        }
         if (e != null) {
             connectToFirestoreObservable.onError(e);
         } else {
@@ -150,9 +162,10 @@ public class FirebaseRepository {
 
             } else {
                 User user = new User(
-                        firebaseUser.getDisplayName(),
-                        firebaseUser.getUid(),
-                        deviceToken, firebaseUser.getEmail());
+                        chatUser.getDisplayName(),
+                        deviceToken,
+                        chatUser.getLogin(),
+                        chatUser.getPhotoUrl());
                 getCurrentUserReference()
                         .set(user)
                         .addOnSuccessListener(aVoid -> connectToFirestoreObservable.onNext(true))
@@ -161,20 +174,47 @@ public class FirebaseRepository {
         }
     }
 
-    public Observable<List<String>> observeUserContacts() {
+    public Observable<List<SelectableUser>> observeUserContacts() {
+        if (chatUser == null)
+            throw new NullPointerException(MESSAGE_NULL_USER);
         getCurrentUserReference().addSnapshotListener((documentSnapshot, e) -> {
             if (e != null) {
                 contactsObservable.onError(e);
             } else {
-                try {
-                    List<String> contacts = (List<String>) documentSnapshot.get(Users.FIELD_CONTACTS);
-                    if (contacts != null) {
-                        contactsObservable.onNext(contacts);
-                    } else {
-                        contactsObservable.onNext(new ArrayList<>());
+                PublishSubject<DocumentSnapshot> snapshotPublishSubject = PublishSubject.create();
+                List<String> contacts = (List<String>) documentSnapshot.get(Users.FIELD_CONTACTS);
+
+                if (contacts != null && !contacts.isEmpty()) {
+                    for (String login : contacts) {
+                        Log.e("login", login);
+                        database.collection(Users.COLLECTION_PATH)
+                                .document(login)
+                                .get()
+                                .addOnSuccessListener(snapshotPublishSubject::onNext)
+                                .addOnFailureListener(snapshotPublishSubject::onError);
                     }
-                } catch (ClassCastException e1) {
-                    contactsObservable.onError(e1);
+                    snapshotPublishSubject
+                            .buffer(contacts.size())
+                            .map(list -> {
+                                Log.e("gets list", list.toString());
+                                List<SelectableUser> selectableUsers = new ArrayList<>();
+                                for (DocumentSnapshot snap : list) {
+                                    SelectableUser user = new SelectableUser(
+                                            (String) snap.get(Users.FIELD_DISPLAY_NAME),
+                                            (String) snap.get(Users.FIELD_DEVICE_TOKEN),
+                                            (String) snap.get(Users.FIELD_LOGIN),
+                                            (String) snap.get(Users.FIELD_PHOTO_URL));
+                                    selectableUsers.add(user);
+                                }
+                                return selectableUsers;
+                            })
+                            .subscribeOn(Schedulers.io())
+                            .observeOn(Schedulers.io())
+                            .subscribe(contactsObservable::onNext, contactsObservable::onError);
+
+                } else {
+                    Log.e("list contacts", "NULL or EMPTY");
+                    contactsObservable.onNext(new ArrayList<>());
                 }
             }
         });
@@ -182,6 +222,8 @@ public class FirebaseRepository {
     }
 
     public Observable<Boolean> addContact(String contact) {
+        if (chatUser == null)
+            throw new NullPointerException(MESSAGE_NULL_USER);
         HashMap<String, Object> user = new HashMap<>();
         getCurrentUserReference()
                 .get()
@@ -223,36 +265,46 @@ public class FirebaseRepository {
     }
 
     public Observable<ArrayList<HashMap<String, String>>> observeChatMessages(String chatId) {
+        PublishSubject<HashMap<String, String>> publishSubject = PublishSubject.create();
         database.collection(Chats.COLLECTION_PATH)
                 .document(chatId)
                 .addSnapshotListener((documentSnapshot, e) -> {
                     if (e != null)
                         chatMessagesObservable.onError(e);
-                    else {
-                        try {
-                            ArrayList<HashMap<String, Object>> receivedMessages =
-                                    (ArrayList<HashMap<String, Object>>) documentSnapshot.get(Chats.FIELD_MESSAGES);
-                            if (receivedMessages != null) {
-                                ArrayList<HashMap<String, String>> messages = new ArrayList<>();
-                                for (int i = 0; i < receivedMessages.size(); i++) {
-                                    LinkedHashMap<String, String> newObject = new LinkedHashMap<>();
-                                    newObject.put(Chats.FIELD_MESSAGE_TEXT, (String) receivedMessages.get(i).get(Chats.FIELD_MESSAGE_TEXT));
-                                    newObject.put(Chats.FIELD_MESSAGE_TIME, (String) receivedMessages.get(i).get(Chats.FIELD_MESSAGE_TIME));
-                                    newObject.put(Chats.FIELD_MESSAGE_OWNER, (String) receivedMessages.get(i).get(Chats.FIELD_MESSAGE_OWNER));
-                                    messages.add(newObject);
-                                }
-                                chatMessagesObservable.onNext(messages);
-                            }
-                        } catch (ClassCastException e1) {
-                            chatMessagesObservable.onError(e1);
+
+                    List<HashMap<String, Object>> receivedMessages =
+                            (List<HashMap<String, Object>>) documentSnapshot.get(Chats.FIELD_MESSAGES);
+
+                    if (receivedMessages != null && !receivedMessages.isEmpty()) {
+
+                        for (HashMap<String, Object> message : receivedMessages) {
+
+                            getuserByLogin((String) message.get(Chats.FIELD_MESSAGE_OWNER))
+                                    .addSnapshotListener((snapshot, exception) -> {
+                                        if (exception != null)
+                                            publishSubject.onError(exception);
+
+                                        LinkedHashMap<String, String> newObject = new LinkedHashMap<>();
+                                        newObject.put(Chats.FIELD_MESSAGE_TEXT, (String) message.get(Chats.FIELD_MESSAGE_TEXT));
+                                        newObject.put(Chats.FIELD_MESSAGE_TIME, (String) message.get(Chats.FIELD_MESSAGE_TIME));
+                                        newObject.put(Chats.FIELD_MESSAGE_OWNER, (String) message.get(Chats.FIELD_MESSAGE_OWNER));
+                                        newObject.put(Users.FIELD_DISPLAY_NAME, (String) snapshot.get(Users.FIELD_DISPLAY_NAME));
+                                        publishSubject.onNext(newObject);
+                                    });
                         }
+                        publishSubject
+                                .buffer(receivedMessages.size())
+                                .map(ArrayList::new)
+                                .subscribe(
+                                        list -> chatMessagesObservable.onNext(list),
+                                        t -> chatMessagesObservable.onError(t));
                     }
                 });
         return chatMessagesObservable;
     }
 
-    public String getUserEmail() {
-        return firebaseUser.getEmail();
+    public String getLogin() {
+        return chatUser.getLogin();
     }
 
     public void sendMessage(String text, String chatId) {
@@ -263,10 +315,11 @@ public class FirebaseRepository {
                     try {
                         ArrayList<HashMap<String, String>> messages =
                                 (ArrayList<HashMap<String, String>>) documentSnapshot.get(Chats.FIELD_MESSAGES);
-                        if(messages != null) {
+                        if (messages != null) {
                             HashMap<String, String> message = new HashMap<>();
+                            message.put(Chats.FIELD_MESSAGE_READ, "false");
                             message.put(Chats.FIELD_MESSAGE_TEXT, text);
-                            message.put(Chats.FIELD_MESSAGE_OWNER, firebaseUser.getEmail());
+                            message.put(Chats.FIELD_MESSAGE_OWNER, chatUser.getLogin());
                             SimpleDateFormat formatter = new SimpleDateFormat("HH:mm", Locale.US);
                             Date date = new Date();
                             message.put(Chats.FIELD_MESSAGE_TIME, formatter.format(date));
@@ -280,5 +333,49 @@ public class FirebaseRepository {
                         e.printStackTrace();
                     }
                 });
+    }
+
+    public List<String> clear(List<String> temp) {
+        ArrayList<String> logins = new ArrayList<>(temp);
+        if (logins.contains(chatUser.getLogin())) {
+            temp.remove(chatUser.getLogin());
+        }
+        return temp;
+    }
+
+    public Observable<List<String>> getLogins(String chatId) {
+        PublishSubject<List<String>> chatLoginsObservable = PublishSubject.create();
+        database
+                .collection(Chats.COLLECTION_PATH)
+                .document(chatId)
+                .get()
+                .onSuccessTask(snapshot -> {
+                    chatLoginsObservable.onNext((List<String>) snapshot.get(Chats.FIELD_MEMBERS));
+                    return null;
+                });
+        return chatLoginsObservable;
+    }
+
+    public Observable<String> getToken(String login) {
+        PublishSubject<String> tokenObservable = PublishSubject.create();
+        database
+                .collection(Users.COLLECTION_PATH)
+                .document(login)
+                .get()
+                .onSuccessTask(snapshot -> {
+                    tokenObservable.onNext((String) snapshot.get(Users.FIELD_DEVICE_TOKEN));
+                    return null;
+                });
+        return tokenObservable;
+    }
+
+    public ChatUser getChatUser() {
+        return chatUser;
+    }
+
+    public Task<Void> removeChat(String s) {
+        return database.collection(Chats.COLLECTION_PATH)
+                .document(s)
+                .delete();
     }
 }

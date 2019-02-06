@@ -1,4 +1,4 @@
-package com.coal.projects.chat.presentation.chats.chat;
+package com.coal.projects.chat.domain.utils;
 
 import android.support.v7.util.DiffUtil;
 

@@ -11,4 +11,7 @@ public abstract class Chats {
     public static final String FIELD_MESSAGE_TEXT = "messageText";
     public static final String FIELD_MESSAGE_TIME = "messageTime";
     public static final String FIELD_MESSAGE_OWNER = "messageOwner";
+
+    public static final String FIELD_DISPLAY_NAMES = "DISPLAY_NAMES";
+    public static final String FIELD_MESSAGE_READ = "messageRead";
 }

@@ -4,33 +4,51 @@ import android.annotation.TargetApi;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.BitmapFactory;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import com.coal.projects.chat.creation.ChatIcons;
+import com.coal.projects.chat.firestore_constants.Chats;
+import com.coal.projects.chat.presentation.chat.ChatActivity;
 import com.google.firebase.messaging.RemoteMessage;
 
 import static android.support.v4.app.NotificationCompat.PRIORITY_MAX;
 import static android.support.v4.app.NotificationCompat.VISIBILITY_PUBLIC;
 
-public class ChatNotificationHelper {
+public class NotificationHelper implements AppInnerReceiver.OnReceiveCallback {
 
     private final Context context;
 
     private final String N_CHANNEL_ID;
     private final String N_CHANNEL_NAME;
     private final Uri uriSound;
+    private final AppInnerReceiver bReceiver;
+    private LocalBroadcastManager bManager;
     private NotificationManager nManager;
 
     private NotificationManagerCompat nManagerCompat;
     private int pushId = 1;
 
-    public ChatNotificationHelper(Context context) {
+    public static String CHAT_INNER_ACTION = "com.coal.projects.chat.NotificationHelper.CHAT_INNER_ACTION";
+    private Intent intent;
 
-        this.context = context;
+    public NotificationHelper(Context mContext) {
+
+        this.context = mContext;
+
+        bReceiver = new AppInnerReceiver();
+        bReceiver.setCallback(this);
+
+        registerReceiver(context);
 
         N_CHANNEL_ID = context.getString(R.string.channel_id);
         N_CHANNEL_NAME = N_CHANNEL_ID + "NAME";
@@ -43,6 +61,13 @@ public class ChatNotificationHelper {
             nManagerCompat = NotificationManagerCompat.from(context);
         }
 
+    }
+
+    private void registerReceiver(Context context) {
+        bManager = LocalBroadcastManager.getInstance(context);
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(CHAT_INNER_ACTION);
+        bManager.registerReceiver(bReceiver, intentFilter);
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -87,12 +112,34 @@ public class ChatNotificationHelper {
     }
 
 
-    private void notifyBySpecifyManager(int lPushId, Notification notification) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nManager.notify(lPushId, notification);
+    private void notifyBySpecifyManager(RemoteMessage remoteMessage, int lPushId, Notification notification) {
+
+        if (canNotify(remoteMessage)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                nManager.notify(lPushId, notification);
+            } else {
+                nManagerCompat.notify(lPushId, notification);
+            }
         } else {
-            nManagerCompat.notify(lPushId, notification);
+            playSound();
         }
+    }
+
+    private boolean canNotify(RemoteMessage remoteMessage) {
+        Log.e("remote", remoteMessage.getData().toString());
+        String chatId = "";
+        if (intent != null) {
+            chatId = intent.getStringExtra(Chats.FIELD_CHAT_ID);
+        }
+        if (chatId == null)
+            return true;
+        if (chatId.isEmpty())
+            return true;
+        return !chatId.equals(remoteMessage.getData().get(Chats.FIELD_CHAT_ID));
+    }
+
+    private void playSound() {
+
     }
 
     public void remoteMessageReceived(RemoteMessage remoteMessage) {
@@ -106,45 +153,27 @@ public class ChatNotificationHelper {
 
             route(remoteMessage, mBuilder);
 
-            notifyBySpecifyManager(pushId, mBuilder.build());
+            notifyBySpecifyManager(remoteMessage, pushId, mBuilder.build());
         }
     }
 
     private void route(RemoteMessage remoteMsg, NotificationCompat.Builder notificationBuilder) {
 
-        String type = remoteMsg.getData().get(Consts.TYPE);
-        if (type != null)
-            switch (Integer.valueOf(type)) {
-                case Consts.SOME_TYPE: {
-
-                }
-                break;
-                default:
-                    break;
-            }
-
-//                notificationBuilder.setContentIntent(getBasePendingIntent());
-//
-//                notificationBuilder.setContentIntent(getCardDetailsPendingIntent(remoteMsg));
-
+        if (canNotify(remoteMsg)) {
+            notificationBuilder.setContentIntent(getBasePendingIntent(remoteMsg));
+        }
     }
 
-//    private PendingIntent getCardDetailsPendingIntent(RemoteMessage remoteMessage) {
-//        Intent intent = new Intent(context, PreviewActivity.class);
-//        intent.putExtra(Consts.KEY_ID, Integer.valueOf(remoteMessage.getData().get(Consts.POSTCARD_ID)));
-//        intent.putExtra(Consts.KEY_REDIRECT_BACK, true);
-//        return PendingIntent.getActivity(context, pushId, intent, PendingIntent.FLAG_ONE_SHOT);
-//    }
-//
-//    private PendingIntent getBasePendingIntent() {
-//        Intent baseIntent = new Intent(context, LoginActivity.class);
-//        baseIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//        return PendingIntent.getActivity(context, pushId, baseIntent, PendingIntent.FLAG_ONE_SHOT);
-//    }
+    private PendingIntent getBasePendingIntent(RemoteMessage remoteMsg) {
+        Intent baseIntent = new Intent(context, ChatActivity.class);
+        baseIntent.putExtra(Chats.FIELD_CHAT_ID, remoteMsg.getData().get(Chats.FIELD_CHAT_ID));
+        baseIntent.putExtra(Chats.FIELD_DISPLAY_NAMES, remoteMsg.getData().get("title"));
+        return PendingIntent.getActivity(context, pushId, baseIntent, PendingIntent.FLAG_ONE_SHOT);
+    }
 
-    public static class Consts {
-        static final String TYPE = "type";
-        public static final int SOME_TYPE = 1;
-
+    @Override
+    public void onReceive(Intent intent) {
+        Log.e("$$$", "NEW INTENT");
+        this.intent = intent;
     }
 }

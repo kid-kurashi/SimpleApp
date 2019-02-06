@@ -1,4 +1,4 @@
-package com.coal.projects.chat;
+package com.coal.projects.chat.creation;
 
 public class ChatIcons {
 

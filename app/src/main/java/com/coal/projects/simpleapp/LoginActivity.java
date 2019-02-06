@@ -1,14 +1,12 @@
-package com.coal.projects.chat.presentation;
+package com.coal.projects.simpleapp;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.constraint.ConstraintLayout;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
-import com.coal.projects.chat.R;
-import com.coal.projects.chat.presentation.base.BaseActivity;
-import com.coal.projects.chat.presentation.chats.ChatsActivity;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -23,7 +21,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.BehaviorSubject;
 
-public class LoginActivity extends BaseActivity {
+public class LoginActivity extends AppCompatActivity {
 
     private BehaviorSubject<Boolean> isLoggedIn = BehaviorSubject.create();
     private Disposable isLoggedInDisposable;
@@ -38,9 +36,10 @@ public class LoginActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_login);
         setTitle("Sign in");
-        content = findViewById(R.id.content);
+        content = findViewById(com.coal.projects.chat.R.id.content);
         findViewById(R.id.sign_in_button).setOnClickListener(v -> signInWithGoogle());
 
         mAuth = FirebaseAuth.getInstance();
@@ -82,7 +81,7 @@ public class LoginActivity extends BaseActivity {
     }
 
     private void goNext() {
-        startActivity(new Intent(this, ChatsActivity.class));
+        startActivity(new Intent(this, MainActivity.class));
         finish();
     }
 

@@ -5,18 +5,16 @@
 
         <variable
                 name="model"
-                type="com.coal.projects.chat.presentation.chats.chat.ChatViewModel"/>
+                type="com.coal.projects.chat.presentation.chat.ChatViewModel"/>
     </data>
 
     <android.support.constraint.ConstraintLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
             xmlns:chatApp="http://schemas.android.com/apk/res-auto"
-            xmlns:tools="http://schemas.android.com/tools"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             chatApp:layout_constraintVertical_chainStyle="spread"
-            tools:context=".presentation.chats.chat.ChatActivity"
             android:background="@color/chat_background">
 
         <android.support.v4.widget.SwipeRefreshLayout
@@ -35,7 +33,7 @@
                     android:layout_height="match_parent"/>
         </android.support.v4.widget.SwipeRefreshLayout>
 
-        <FrameLayout
+        <android.support.constraint.ConstraintLayout
                 android:id="@+id/write_message_wrapper"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -47,7 +45,10 @@
             <View
                     android:layout_width="match_parent"
                     android:layout_height="1px"
-                    android:background="@color/secondary_text"/>
+                    android:background="@color/secondary_text" android:id="@+id/view" android:layout_marginBottom="8dp"
+                    chatApp:layout_constraintTop_toTopOf="parent"
+                    chatApp:layout_constraintStart_toStartOf="parent"
+                    chatApp:layout_constraintEnd_toEndOf="parent"/>
 
             <ImageButton
                     android:id="@+id/attach_button"
@@ -57,28 +58,34 @@
                     app:srcCompat="@drawable/attach"
                     android:layout_marginTop="4dp"
                     android:scaleType="centerInside"
-                    android:background="@drawable/rounded_button_48dp"/>
+                    android:background="@drawable/rounded_button_48dp"
+                    chatApp:layout_constraintStart_toStartOf="parent"
+                    chatApp:layout_constraintTop_toTopOf="parent"/>
 
             <EditText
                     android:id="@+id/input_message"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical|start"
-                    android:layout_marginStart="52dp"
-                    android:layout_marginEnd="64dp"
                     android:minHeight="32dp"
                     android:inputType="textMultiLine|textCapSentences"
                     android:minLines="1"
                     android:gravity="top|start"
                     android:scrollbars="vertical"
                     android:maxHeight="200dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
                     android:background="@drawable/chat_text_input"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp"
                     android:paddingStart="16dp"
-                    android:paddingEnd="16dp"/>
+                    android:paddingEnd="16dp"
+                    android:layout_marginEnd="52dp"
+                    android:layout_marginStart="52dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    chatApp:layout_constraintBottom_toBottomOf="parent"
+                    chatApp:layout_constraintEnd_toEndOf="parent"
+                    chatApp:layout_constraintStart_toStartOf="parent"
+                    chatApp:layout_constraintTop_toTopOf="parent"/>
 
             <ImageButton
                     android:id="@+id/send_button"
@@ -86,11 +93,11 @@
                     android:layout_height="48dp"
                     android:layout_gravity="bottom|end"
                     app:srcCompat="@drawable/send"
-                    android:layout_marginBottom="3dp"
                     android:scaleType="centerInside"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/rounded_button_48dp"/>
-        </FrameLayout>
+                    android:layout_marginBottom="3dp"
+                    android:background="@drawable/rounded_button_48dp" chatApp:layout_constraintEnd_toEndOf="parent"
+                    chatApp:layout_constraintBottom_toBottomOf="parent"/>
+        </android.support.constraint.ConstraintLayout>
 
     </android.support.constraint.ConstraintLayout>
 </layout>

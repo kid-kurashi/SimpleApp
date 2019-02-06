@@ -1,4 +1,4 @@
-package com.coal.projects.chat.presentation.chats.chat;
+package com.coal.projects.chat.presentation.chat;
 
 
 import android.support.annotation.NonNull;
@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import com.coal.projects.chat.R;
 import com.coal.projects.chat.firestore_constants.Chats;
+import com.coal.projects.chat.firestore_constants.Users;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,9 +63,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
         private final TextView messageText;
         private final TextView messageTime;
         private final ConstraintLayout root;
+        private final TextView displayName;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            displayName = itemView.findViewById(R.id.chat_display_name);
             cardView = itemView.findViewById(R.id.chat_card_view);
             messageText = itemView.findViewById(R.id.chat_message_text);
             messageTime = itemView.findViewById(R.id.chat_message_time);
@@ -73,20 +76,25 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ViewHolder> {
 
         public void bind(HashMap<String, String> messageMap) {
             Log.e("MAP", messageMap.toString());
+            displayName.setText(messageMap.get(Users.FIELD_DISPLAY_NAME));
             messageText.setText(messageMap.get(Chats.FIELD_MESSAGE_TEXT));
             messageTime.setText(messageMap.get(Chats.FIELD_MESSAGE_TIME));
             if (messageMap.get(Chats.FIELD_MESSAGE_OWNER).equals(owner)) {
-                int color = super.itemView.getContext().getResources().getColor(R.color.bubble_own_background);
-                cardView.setCardBackgroundColor(color);
+                int cardColor = super.itemView.getContext().getResources().getColor(R.color.bubble_own_background);
+                cardView.setCardBackgroundColor(cardColor);
                 ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.WRAP_CONTENT);
-                params.setMargins(250, 8,8, 8);
+                params.setMargins(250, 8, 8, 8);
                 root.setLayoutParams(params);
+                int textColor = super.itemView.getContext().getResources().getColor(R.color.md_green_800);
+                displayName.setTextColor(textColor);
             } else {
-                int color = super.itemView.getContext().getResources().getColor(R.color.bubble_background);
-                cardView.setCardBackgroundColor(color);
+                int cardColor = super.itemView.getContext().getResources().getColor(R.color.bubble_background);
+                cardView.setCardBackgroundColor(cardColor);
                 ConstraintLayout.LayoutParams params = new ConstraintLayout.LayoutParams(ConstraintLayout.LayoutParams.MATCH_PARENT, ConstraintLayout.LayoutParams.WRAP_CONTENT);
-                params.setMargins(8, 8,250, 8);
+                params.setMargins(8, 8, 250, 8);
                 root.setLayoutParams(params);
+                int textColor = super.itemView.getContext().getResources().getColor(R.color.md_orange_900);
+                displayName.setTextColor(textColor);
             }
         }
     }

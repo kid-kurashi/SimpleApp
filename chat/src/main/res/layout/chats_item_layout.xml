@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    xmlns:chatApp="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/chats_chat_root">
+                                             xmlns:chatApp="http://schemas.android.com/apk/res-auto"
+                                             xmlns:tools="http://schemas.android.com/tools"
+                                             android:layout_width="match_parent"
+                                             android:layout_height="80dp"
+                                             android:id="@+id/chats_chat_root">
 
     <com.makeramen.roundedimageview.RoundedImageView
-        android:id="@+id/chats_chat_image"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
-        android:layout_margin="16dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        chatApp:layout_constraintBottom_toBottomOf="parent"
-        chatApp:layout_constraintStart_toStartOf="parent"
-        chatApp:layout_constraintTop_toTopOf="parent"
-        chatApp:riv_corner_radius="28dp" />
+            android:id="@+id/chats_chat_image"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_margin="16dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            chatApp:layout_constraintBottom_toBottomOf="parent"
+            chatApp:layout_constraintStart_toStartOf="parent"
+            chatApp:layout_constraintTop_toTopOf="parent"
+            chatApp:riv_corner_radius="28dp"/>
 
     <LinearLayout
             android:layout_width="match_parent"
@@ -26,7 +26,8 @@
             chatApp:layout_constraintBottom_toBottomOf="parent"
             chatApp:layout_constraintTop_toTopOf="parent"
             android:layout_marginStart="90dp" chatApp:layout_constraintEnd_toEndOf="parent"
-            android:layout_marginEnd="8dp" chatApp:layout_constraintStart_toStartOf="parent">
+            android:layout_marginEnd="8dp" chatApp:layout_constraintStart_toStartOf="parent"
+            android:id="@+id/linearLayout">
 
         <TextView
                 android:id="@+id/chats_chat_tag"
@@ -36,7 +37,7 @@
                 android:layout_height="wrap_content"
                 tools:text="Some name"
                 android:layout_marginTop="8dp"
-        android:maxLines="2"/>
+                android:maxLines="2"/>
 
         <TextView
                 android:id="@+id/chats_last_message"
@@ -49,16 +50,17 @@
                 android:maxLines="1"/>
     </LinearLayout>
 
-    <View
-            android:layout_width="match_parent"
-        android:layout_height="1px"
-        android:layout_gravity="bottom"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:background="@color/secondary_text"
-        chatApp:layout_constraintBottom_toBottomOf="parent"
-        chatApp:layout_constraintEnd_toEndOf="parent"
-        chatApp:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="1px"/>
+    <ImageView
+            chatApp:srcCompat="@drawable/deleted"
+            android:id="@+id/chats_removed_chat"
+            android:layout_width="32dp" android:layout_height="32dp"
+            android:text="@string/chat_removed"
+            android:visibility="gone"
+            android:scaleType="centerInside"
+            chatApp:layout_constraintBottom_toBottomOf="parent"
+            chatApp:layout_constraintEnd_toEndOf="parent"
+            chatApp:layout_constraintTop_toTopOf="parent"
+            android:layout_marginEnd="16dp"
+    />
 
 </android.support.constraint.ConstraintLayout>

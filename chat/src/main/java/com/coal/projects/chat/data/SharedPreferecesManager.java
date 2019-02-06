@@ -10,7 +10,7 @@ import java.util.Set;
 public class SharedPreferecesManager {
 
     private final Context context;
-    private static final String PREF_NAME_FILE_FIREBASECHAT_PREFERENCES = "PREF_NAME_FILE_FIREBASECHAT_PREFERENCES";
+    private static final String PREF_NAME_FILE_FIREBASECHAT_PREFERENCES = "PREF_NAME_FILE_CHAT_PREFERENCES";
     private final SharedPreferences sharedPreferences;
 
     public SharedPreferecesManager(Context context) {

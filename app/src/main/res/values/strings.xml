@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">SimpleApp</string>
+    <string name="log_in">Log In</string>
+    <string name="client_id">949759736472-3tu5q4ft2eli3j7qjpn1rkhf79pj0tjk.apps.googleusercontent.com</string>
+    <string name="server_key">AAAA3SIXepg:APA91bHpG5_Z9DgGNrp0N7ojI26LCg67S9TCU2-dpALepj5dfksG6hMg2uIVGkDtOdLKsWIi_MsNGQU30YO1ft5d7BN3pJT29bQvlqkTfV15aCSdpbgsLCc8qwOSRIcyz87TDgWldAt9</string>
 </resources>

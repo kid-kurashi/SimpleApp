@@ -10,17 +10,20 @@
                 type="com.coal.projects.chat.presentation.chats.ChatsViewModel"/>
     </data>
 
-    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                 xmlns:tools="http://schemas.android.com/tools"
-                 android:layout_width="match_parent"
-                 android:layout_height="match_parent"
-                 tools:context=".presentation.chats.ChatsActivity"
-                 android:background="#fff">
+    <FrameLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            tools:context=".presentation.chats.ChatsActivity"
+            android:background="#fff">
 
         <android.support.design.widget.AppBarLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:theme="@style/AppTheme.AppBarOverlay">
+                android:theme="@style/AppTheme.AppBarOverlay"
+                android:id="@+id/appBarLayout">
+
 
             <android.support.v7.widget.Toolbar
                     android:id="@+id/toolbar"
@@ -28,7 +31,6 @@
                     android:layout_height="?attr/actionBarSize"
                     chatApp:popupTheme="@style/AppTheme.PopupOverlay"
                     android:background="@color/colorPrimary"/>
-
         </android.support.design.widget.AppBarLayout>
 
         <android.support.v4.widget.SwipeRefreshLayout
@@ -44,6 +46,17 @@
 
             </android.support.v7.widget.RecyclerView>
         </android.support.v4.widget.SwipeRefreshLayout>
+
+        <ProgressBar
+                android:id="@+id/connection_progress"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="fill_parent"
+                android:layout_height="24dp"
+                android:layout_gravity="top"
+                android:indeterminateBehavior="repeat"
+                android:indeterminateDuration="10"
+                android:indeterminateOnly="true"
+                android:layout_marginTop="48dp"/>
 
         <android.support.design.widget.FloatingActionButton
                 android:id="@+id/fab_new_chat"

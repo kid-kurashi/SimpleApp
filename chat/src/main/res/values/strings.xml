@@ -10,5 +10,6 @@
     <string name="cancel">CANCEL</string>
     <string name="pick_contacts">Pick contacts</string>
     <string name="add_user_title">Add user by email</string>
-    <string name="client_id">949759736472-3tu5q4ft2eli3j7qjpn1rkhf79pj0tjk.apps.googleusercontent.com</string>
+    <string name="chat_removed">Chat Removed</string>
+    <string name="delete">Delete</string>
 </resources>
