@@ -1,5 +1,6 @@
 package com.coal.projects.chat.data;
 
+//Для интеграции чата с приложем, нужно использовать этот класс
 public class ChatUser {
 
     private String login;

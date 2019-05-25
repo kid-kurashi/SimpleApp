@@ -21,7 +21,8 @@
         <activity android:name=".presentation.contacts.ContactsActivity">
         </activity>
 
-        <service android:name=".ChatMessagingService">
+        <service android:name=".ChatMessagingService"
+                 android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT"/>
             </intent-filter>

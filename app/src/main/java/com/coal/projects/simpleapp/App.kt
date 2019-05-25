@@ -23,12 +23,14 @@ class App : Application() {
 
         FirebaseApp.initializeApp(this)
 
+        /*Поучему синглтоны? да потому что... Разные конексты у модулей, ресурсы тоже
+        * Аппликейшен не заинжектить нормально. так что вот*/
         chatInstance = ChatInstance(
             FirebaseRepository(FirebaseFirestore.getInstance()),
             SharedPreferecesManager(this),
             NotificationHelper(this),
             getImageLoader(),
-            "AAAA3SIXepg:APA91bHpG5_Z9DgGNrp0N7ojI26LCg67S9TCU2-dpALepj5dfksG6hMg2uIVGkDtOdLKsWIi_MsNGQU30YO1ft5d7BN3pJT29bQvlqkTfV15aCSdpbgsLCc8qwOSRIcyz87TDgWldAt9"
+            getString(R.string.server_key)
         )
         ChatIcons.drawableIcNotification = R.drawable.logo
         ChatIcons.mipmapIcNotification = R.mipmap.ic_launcher

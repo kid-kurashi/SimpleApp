@@ -24,6 +24,14 @@ import io.reactivex.subjects.ReplaySubject;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
+/*
+* Несколько слов об этой сущности
+*
+* Так как Firestore - нереляционная база данных, скорость получения резулятата обратно
+* пропорциональна сложности выборки. Иначе говоря, чем сложнее выборка, тем уродливей будет выглядеть запрос.
+* Далее, возле особо уродливых запросов будут оставлены пояснения
+* По хорошему, стоит выделять саму логику в одельные классы, но это был прототип и никому это не надо*/
+
 public class FirebaseRepository {
 
     private static final String MESSAGE_NULL_USER = "ChatUser must be init first !";
@@ -32,12 +40,18 @@ public class FirebaseRepository {
     private String deviceToken;
     private ChatUser chatUser;
 
+    /*В данном случает, Реплэи выбраны из-за специфики получения данных.
+    * Сначала возвращаем источник, потом в него эммитим, потом подписываемся на источник
+    * Реплай отправит все данные в потоке, даже если сетевой запрос отработает быстрее чем
+    * return для источника*/
+
     private ReplaySubject<List<Map<String, Object>>> userChatsObservable = ReplaySubject.create();
     private ReplaySubject<CreatedChat> createNewChatObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> connectToFirestoreObservable = ReplaySubject.create();
     private ReplaySubject<List<SelectableUser>> contactsObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> addContactObservable = ReplaySubject.create();
     private ReplaySubject<Boolean> findUserByEmailObservable = ReplaySubject.create();
+
     private PublishSubject<ArrayList<HashMap<String, String>>> chatMessagesObservable = PublishSubject.create();
 
     public FirebaseRepository(FirebaseFirestore database) {
@@ -69,9 +83,14 @@ public class FirebaseRepository {
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     if (querySnapshot != null && !querySnapshot.getDocuments().isEmpty()) {
+
+                        //List, содержащий все снапшоты чатов, в которых состоит юзер
                         List<DocumentSnapshot> listSnapshots = querySnapshot.getDocuments();
                         CompositeDisposable disposable = new CompositeDisposable();
+
                         for (DocumentSnapshot item : listSnapshots) {
+
+                            //Вешаем на каждую ссылку чата наблюдателя
                             database.collection(Chats.COLLECTION_PATH)
                                     .document(item.getId())
                                     .addSnapshotListener((snapshot1, e) -> {
@@ -79,9 +98,13 @@ public class FirebaseRepository {
                                             snapshotPublishSubject.onError(e);
 
                                         HashMap<String, Object> map = new HashMap<>();
+
+                                        //Маппер вернет Observable<List<String>> - отображаемые в чате имена
                                         disposable.add(new LoginsToDisplayNamesMapper(database)
                                                 .map((List<String>) snapshot1.get(Chats.FIELD_MEMBERS), chatUser.getDisplayName())
                                                 .subscribe(names -> {
+
+                                                    //Создаем модельку для элемента списка чатов
                                                     map.put(Chats.FIELD_DISPLAY_NAMES, names);
                                                     map.put(Chats.FIELD_MEMBERS, snapshot1.get(Chats.FIELD_MEMBERS));
                                                     map.put(Chats.FIELD_MESSAGES, snapshot1.get(Chats.FIELD_MESSAGES));
@@ -93,6 +116,8 @@ public class FirebaseRepository {
                                                 }));
                                     });
                         }
+
+                        //Конвертим данные в List<HashMap<String, Object>> и отменяем подписки на маппер имен
                         snapshotPublishSubject
                                 .buffer(listSnapshots.size())
                                 .map(list -> {
@@ -335,6 +360,7 @@ public class FirebaseRepository {
                 });
     }
 
+    //Удаляет из листа логин юзера. Нужен при получении мен в чатах
     public List<String> clear(List<String> temp) {
         ArrayList<String> logins = new ArrayList<>(temp);
         if (logins.contains(chatUser.getLogin())) {

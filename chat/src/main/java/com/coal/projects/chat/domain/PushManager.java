@@ -60,13 +60,18 @@ public class PushManager implements PushApi {
     public void sendPush(String message, String chatId) {
         displayName = firebaseRepository.getChatUser().getDisplayName();
         disposable = firebaseRepository
+                //Получаем все логины в чате
                 .getLogins(chatId)
+                //Перебираем по 1 логину
                 .map(Observable::fromIterable)
                 .flatMap(observable -> observable)
+                //Если встретился логин текущего юзера, отсеиваем
                 .filter(login -> !login.equals(firebaseRepository.getChatUser().getLogin()))
+                //Получаем токен, связанный с логином
                 .flatMap(firebaseRepository::getToken)
                 .observeOn(Schedulers.newThread())
                 .subscribeOn(Schedulers.newThread())
+                //Отправляем пуш
                 .flatMap(token -> sendPush(PushBody.create(token, message, chatId, displayName)))
                 .subscribe(this::whenPushSend, this::failure);
     }
